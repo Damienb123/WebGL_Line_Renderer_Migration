@@ -1,0 +1,57 @@
+html, body {
+  margin: 0;
+  height: 100%;
+}
+
+#root {
+  min-height: 100vh;
+  width: 100vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(
+    180deg,
+    #141414 0%,
+    #12527d 50%,
+    #0b0b0b 100%
+  );
+}
+
+
+.Intro-container {
+  max-width: 500px;
+  width: 100%;
+  padding: 20px;
+  text-align: center;
+  background: #1e1e1e;
+  border-radius: 10px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.5);
+  color: #e0e0e0;
+
+}
+
+.dashboard-container {
+  border-radius: 15px;
+  width: 90%;         /* relative to viewport */
+  max-width: 1400px;  /* don’t exceed 1400px */
+  padding: 50px;
+  background-color: #0b0b0b;
+  position: relative;
+  margin: 0 auto;  /* center horizontally */
+}
+
+
+.dashboard-toggles {
+ position: absolute;
+ top: 0;
+ right: 20px;  /* move it to the left */
+ max-width: fit-content;
+ display: flex;          /* needed for flex-direction to work */
+ flex-direction: column;    /* horizontal layout of children */
+}
+
+.export-btn, .import-btn, .save-btn, .load-btn, .curve-btn, .undo-btn, .smooth-btn {
+  margin: 10px;
+  gap: 10px;
+}
