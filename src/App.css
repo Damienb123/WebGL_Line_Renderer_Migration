@@ -33,7 +33,7 @@ html, body {
 
 .dashboard-container {
   border-radius: 15px;
-  width: 90%;         /* relative to viewport */
+  width: 75%;         /* relative to viewport */
   max-width: 1400px;  /* don’t exceed 1400px */
   padding: 50px;
   background-color: #0b0b0b;
@@ -45,7 +45,7 @@ html, body {
 .dashboard-toggles {
  position: absolute;
  top: 0;
- right: 20px;  /* move it to the left */
+ right: 50px;  /* move it to the left */
  max-width: fit-content;
  display: flex;          /* needed for flex-direction to work */
  flex-direction: column;    /* horizontal layout of children */
@@ -55,3 +55,28 @@ html, body {
   margin: 10px;
   gap: 10px;
 }
+
+.line-management {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: 30px;
+}
+
+.Curves {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.image-export {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.parent-toggle-header {
+  font-size: 1.5em;
+  color: #e0e0e0;
+}
+
