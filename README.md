@@ -1,4 +1,4 @@
-# WebGL Line Renderer — React Migration
+# WebGL Line Renderer (Known as now, Trace)— React Migration
 This project builds a upon a past project built with vanilla Javascript, HTML/CSS, with WebGL graphic functionality. 
 
 ## Tech Stack
