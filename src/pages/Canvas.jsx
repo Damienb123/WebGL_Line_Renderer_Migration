@@ -158,13 +158,13 @@ export default function Draw() {
 
       <div className="dashboard-toggles">
         <div className="line-management">
-            <h2>Line Management</h2>
+            <h2 className="parent-toggle-header">Line Management</h2>
             <button onClick={() => setLineVertices([])}>Clear</button>
             <button onClick={() => setLineVertices((prev) => [...prev, ...[0, 0, 0, 0]])}>Add Point</button>
             <button onClick={() => setLineVertices((prev) => [...prev, ...[-0.5, -0.5, 0.5, 0.5]])}>Add Line</button>
           </div> 
         <div className="Curves">
-          <h2>Curves</h2>
+          <h2 className="parent-toggle-header">Curves</h2>
           <label>
             <input
               type="checkbox"
@@ -177,7 +177,7 @@ export default function Draw() {
           <button onClick={() => setLineVertices([])}>Clear</button>
         </div>
         <div className="image-export">
-          <h2>Export</h2>
+          <h2 className="parent-toggle-header">Export</h2>
           <button onClick={() => {
             const dataURL = canvasRef.current.toDataURL("image/png");
             const link = document.createElement("a");
