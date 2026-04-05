@@ -1,18 +1,48 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import "../App.css";
 import { Link } from "react-router-dom";
+import { buildPlotsFromExpression } from "../utils/equationPlot.js";
+
+/** NDC grid from -1..1 for gl.LINES (pairs of vec2). */
+function buildGridVertices(divisions) {
+  const verts = [];
+  const n = Math.max(1, divisions);
+  const step = 2 / n;
+  for (let i = 0; i <= n; i++) {
+    const x = -1 + i * step;
+    verts.push(x, -1, x, 1);
+  }
+  for (let j = 0; j <= n; j++) {
+    const y = -1 + j * step;
+    verts.push(-1, y, 1, y);
+  }
+  return new Float32Array(verts);
+}
+
+const GRID_LINE_VERTICES = buildGridVertices(12);
+const GRID_COLOR = { r: 0.82, g: 0.84, b: 0.88, a: 1 };
+const EQUATION_CURVE_COLOR = { r: 0.1, g: 0.45, b: 0.95 };
+const DERIVATIVE_CURVE_COLOR = { r: 0.65, g: 0.25, b: 0.85 };
 
 export default function Draw() {
   // DOM + WebGL refs
   const canvasRef = useRef(null);
+  const canvasWrapRef = useRef(null);
   const glRef = useRef(null);
   const programRef = useRef(null);
 
   // State
   const [lineVertices, setLineVertices] = useState([]);
+  const [canvasSizeTick, setCanvasSizeTick] = useState(0);
   const [lineColor, setLineColor] = useState("#ff0000");
   const [lineWidth, setLineWidth] = useState(2);
   const [smoothMode, setSmoothMode] = useState(false);
+
+  const [equationInput, setEquationInput] = useState("x^2");
+  const [showDerivative, setShowDerivative] = useState(false);
+  const [equationSegments, setEquationSegments] = useState(/** @type {Float32Array[]} */ ([]));
+  const [derivativeSegments, setDerivativeSegments] = useState(/** @type {Float32Array[]} */ ([]));
+  const [equationError, setEquationError] = useState(/** @type {string | null} */ (null));
 
   // -------------------------------
   // Initialize WebGL (ONCE)
@@ -71,7 +101,39 @@ export default function Draw() {
     gl.viewport(0, 0, canvas.width, canvas.height);
     gl.clearColor(1, 1, 1, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
+  }, []);
 
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const wrap = canvasWrapRef.current;
+    if (!canvas || !wrap) return;
+
+    const gl = glRef.current;
+    const resize = () => {
+      const cssW = wrap.clientWidth;
+      const cssH = wrap.clientHeight;
+      if (cssW < 2 || cssH < 2) return;
+
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const w = Math.max(1, Math.floor(cssW * dpr));
+      const h = Math.max(1, Math.floor(cssH * dpr));
+      if (canvas.width === w && canvas.height === h) return;
+      canvas.width = w;
+      canvas.height = h;
+      if (gl) {
+        gl.viewport(0, 0, w, h);
+      }
+      setCanvasSizeTick((t) => t + 1);
+    };
+
+    const ro = new ResizeObserver(() => resize());
+    ro.observe(wrap);
+    resize();
+    window.addEventListener("resize", resize);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", resize);
+    };
   }, []);
 
   // -------------------------------
@@ -91,18 +153,46 @@ export default function Draw() {
     const vertices = smoothMode ? smoothVertices(lineVertices) : lineVertices;
 
     gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.DYNAMIC_DRAW);
 
+    gl.bufferData(gl.ARRAY_BUFFER, GRID_LINE_VERTICES, gl.STATIC_DRAW);
     gl.enableVertexAttribArray(positionLocation);
     gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+    gl.uniform4f(colorLocation, GRID_COLOR.r, GRID_COLOR.g, GRID_COLOR.b, GRID_COLOR.a);
+    gl.uniform1f(pointSizeLocation, 1);
+    gl.drawArrays(gl.LINES, 0, GRID_LINE_VERTICES.length / 2);
 
-    const { r, g, b } = hexToRgb(lineColor);
-    gl.uniform4f(colorLocation, r, g, b, 1);
-    gl.uniform1f(pointSizeLocation, lineWidth);
+    const drawStrips = (segments, color, widthPx) => {
+      for (const seg of segments) {
+        const n = seg.length / 2;
+        if (n < 2) continue;
+        gl.bufferData(gl.ARRAY_BUFFER, seg, gl.STATIC_DRAW);
+        gl.uniform4f(colorLocation, color.r, color.g, color.b, 1);
+        gl.uniform1f(pointSizeLocation, widthPx);
+        gl.drawArrays(gl.LINE_STRIP, 0, n);
+      }
+    };
 
-    gl.drawArrays(gl.LINE_STRIP, 0, vertices.length / 2);
+    drawStrips(equationSegments, EQUATION_CURVE_COLOR, 2);
+    drawStrips(derivativeSegments, DERIVATIVE_CURVE_COLOR, 2);
 
-  }, [lineVertices, lineColor, lineWidth, smoothMode]);
+    const vertCount = vertices.length / 2;
+    if (vertCount >= 2) {
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.DYNAMIC_DRAW);
+      const { r, g, b } = hexToRgb(lineColor);
+      gl.uniform4f(colorLocation, r, g, b, 1);
+      gl.uniform1f(pointSizeLocation, lineWidth);
+      gl.drawArrays(gl.LINE_STRIP, 0, vertCount);
+    }
+
+  }, [
+    lineVertices,
+    lineColor,
+    lineWidth,
+    smoothMode,
+    canvasSizeTick,
+    equationSegments,
+    derivativeSegments,
+  ]);
 
   // -------------------------------
   // Helpers
@@ -141,6 +231,31 @@ export default function Draw() {
     setLineVertices((prev) => prev.slice(0, -2));
   };
 
+  const applyEquationPlot = useCallback((includeDerivativeFlag) => {
+    setEquationError(null);
+    const result = buildPlotsFromExpression(equationInput, {
+      includeDerivative: includeDerivativeFlag,
+    });
+    if (!result.ok) {
+      setEquationError(result.error);
+      setEquationSegments([]);
+      setDerivativeSegments([]);
+      return;
+    }
+    setEquationSegments(result.segments);
+    setDerivativeSegments(result.derivativeSegments);
+  }, [equationInput]);
+
+  const handlePlotEquation = useCallback(() => {
+    applyEquationPlot(showDerivative);
+  }, [applyEquationPlot, showDerivative]);
+
+  const handleClearEquationPlots = useCallback(() => {
+    setEquationSegments([]);
+    setDerivativeSegments([]);
+    setEquationError(null);
+  }, []);
+
   // -------------------------------
   // application UI for line management, curve toggling, and image export
   // separate divs are used for dedicating types of capabilities within the application for the user
@@ -148,23 +263,86 @@ export default function Draw() {
   // 
   return (
     <div className="dashboard-container">
-      <canvas
-        ref={canvasRef}
-        width={800}
-        height={600}
-        onClick={handleCanvasClick}
-        style={{ border: "1px solid #ccc", borderRadius: "20px" }}
-      />
+      <div className="dashboard-canvas-wrap" ref={canvasWrapRef}>
+        <canvas
+          ref={canvasRef}
+          width={1000}
+          height={1000}
+          onClick={handleCanvasClick}
+        />
+      </div>
 
       <div className="dashboard-toggles">
         <div className="line-management">
             <h2 className="parent-toggle-header">Line Management</h2>
+            <p className="parent-description">Have the ability to manage your lines from <br/> adding individual points to complete lines.</p>
             <button onClick={() => setLineVertices([])}>Clear</button>
             <button onClick={() => setLineVertices((prev) => [...prev, ...[0, 0, 0, 0]])}>Add Point</button>
             <button onClick={() => setLineVertices((prev) => [...prev, ...[-0.5, -0.5, 0.5, 0.5]])}>Add Line</button>
           </div> 
+        <div className="equation-plot">
+          <h2 className="parent-toggle-header">Equation plot</h2>
+          <p className="parent-description">
+            Enter <code className="equation-hint">y = f(x)</code> using x as the variable (e.g.{" "}
+            <code className="equation-hint">x^2</code>, <code className="equation-hint">sin(x)</code>,{" "}
+            <code className="equation-hint">2*x + 1</code>
+            ). Math.js syntax: <code className="equation-hint">^</code> power,{" "}
+            <code className="equation-hint">sqrt(x)</code>, <code className="equation-hint">log(x)</code>,{" "}
+            <code className="equation-hint">exp(x)</code>, <code className="equation-hint">pi</code>,{" "}
+            <code className="equation-hint">e</code>.
+          </p>
+          <label className="equation-field-label" htmlFor="equation-input">
+            f(x) =
+          </label>
+          <textarea
+            id="equation-input"
+            className="equation-input"
+            rows={3}
+            spellCheck={false}
+            value={equationInput}
+            onChange={(e) => setEquationInput(e.target.value)}
+            placeholder="x^2 - 0.5"
+          />
+          <label className="equation-checkbox">
+            <input
+              type="checkbox"
+              checked={showDerivative}
+              onChange={(e) => {
+                const next = e.target.checked;
+                setShowDerivative(next);
+                if (equationSegments.length > 0 || derivativeSegments.length > 0) {
+                  applyEquationPlot(next);
+                }
+              }}
+            />
+            Plot derivative f′(x)
+          </label>
+          <div className="equation-actions">
+            <button type="button" onClick={handlePlotEquation}>
+              Plot on canvas
+            </button>
+            <button type="button" onClick={handleClearEquationPlots}>
+              Clear plots
+            </button>
+          </div>
+          {equationError ? (
+            <p className="equation-error" role="alert">
+              {equationError}
+            </p>
+          ) : null}
+          <p className="equation-legend">
+            <span className="equation-legend-swatch equation-legend-fn" /> f(x)
+            {showDerivative ? (
+              <>
+                {" "}
+                <span className="equation-legend-swatch equation-legend-df" /> f′(x)
+              </>
+            ) : null}
+          </p>
+        </div>
         <div className="Curves">
           <h2 className="parent-toggle-header">Curves</h2>
+          <p className="parent-description">Toggle smooth curves on or off.</p>
           <label>
             <input
               type="checkbox"
@@ -178,6 +356,7 @@ export default function Draw() {
         </div>
         <div className="image-export">
           <h2 className="parent-toggle-header">Export</h2>
+          <p className="parent-description">Export your canvas as an image file.</p>
           <button onClick={() => {
             const dataURL = canvasRef.current.toDataURL("image/png");
             const link = document.createElement("a");
