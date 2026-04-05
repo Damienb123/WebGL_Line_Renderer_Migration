@@ -1,23 +1,30 @@
-# WebGL Line Renderer (Known as now, Trace)— React Migration
+# Trace — WebGL Line Renderer
 
-# Overview
+## Overview
+
 **Trace** is a browser-based drawing app that renders lines in real time with **WebGL**. You can sketch freehand by clicking on the canvas, optionally smooth segments, plot **algebraic functions** (y = f(x)) and their **derivatives** using math expressions, and **export** the result as a PNG. The UI is built with **React** and is laid out for desktop and smaller screens, with a grid background on the canvas to help read coordinates.
 
+---
 
-## Tech Stack
-![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)
-![React Router](https://img.shields.io/badge/React_Router-CA4245?style=for-the-badge&logo=react-router&logoColor=white)
-![WebGL](https://img.shields.io/badge/WebGL-990000?logo=webgl&logoColor=white&style=for-the-badge)
-![Visual Studio Code](https://img.shields.io/badge/Visual%20Studio%20Code-0078d7.svg?style=for-the-badge&logo=visual-studio-code&logoColor=white)
-![CSS3](https://img.shields.io/badge/css3-%231572B6.svg?style=for-the-badge&logo=css3&logoColor=white)
-![JavaScript](https://img.shields.io/badge/javascript-%23323330.svg?style=for-the-badge&logo=javascript&logoColor=%23F7DF1E)
-![Vite](https://img.shields.io/badge/vite-%23646CFF.svg?style=for-the-badge&logo=vite&logoColor=white)
+## Tech stack
 
+| Area | Technology |
+|------|------------|
+| UI | [React](https://react.dev/) 19 |
+| Routing | [React Router](https://reactrouter.com/) 7 |
+| Build / dev server | [Vite](https://vite.dev/) 7 |
+| Graphics | WebGL 1 (`canvas.getContext('webgl')`) |
+| Math expressions | [mathjs](https://mathjs.org/) (parse, evaluate, symbolic derivative) |
+| Linting | ESLint 9 |
+
+---
 
 ## Prerequisites
 
 - **Node.js** (current LTS recommended, e.g. 20+)
 - **npm** (comes with Node)
+
+---
 
 ## Setup and run
 
@@ -126,3 +133,7 @@ src/
 Requires **WebGL**. Use a current Chrome, Firefox, Edge, or Safari. If WebGL is disabled or unavailable, the app logs an error and the canvas will not render correctly.
 
 ---
+
+## License
+
+This project is private (`"private": true` in `package.json`). Add a license file if you plan to open-source it.
