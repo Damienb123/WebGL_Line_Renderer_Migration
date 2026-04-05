@@ -15,7 +15,7 @@ export default function Home() {
       </p>
       <button
         className="entry-btn"
-        onClick={() => navigate('/Canvas')}
+        onClick={() => navigate('/canvas')}
       >
         Get Started
       </button>
