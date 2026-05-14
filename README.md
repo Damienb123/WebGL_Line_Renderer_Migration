@@ -18,6 +18,8 @@ and is laid out for desktop and smaller screens, with a grid background on the c
 ![JavaScript](https://img.shields.io/badge/javascript-%23323330.svg?style=for-the-badge&logo=javascript&logoColor=%23F7DF1E)
 ![HTML5](https://img.shields.io/badge/html5-%23E34F26.svg?style=for-the-badge&logo=html5&logoColor=white)
 ![CSS](https://img.shields.io/badge/css-%23663399.svg?style=for-the-badge&logo=css&logoColor=white)
+![Python](https://img.shields.io/badge/python-%233776AB.svg?style=for-the-badge&logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi&logoColor=white)
 
 ---
 
@@ -25,6 +27,11 @@ and is laid out for desktop and smaller screens, with a grid background on the c
 
 - **Node.js** (current LTS recommended, e.g. 20+)
 - **npm** (comes with Node)
+- **FastAPI** (version 0.129.0)
+- **uvicorn[standard]** (version 0.38.0)
+- **pydantic-settings** (version 2.12.0)
+- **pytest** (version 9.0.2)
+- **httpx** (version 0.28.1)
 
 ---
 
