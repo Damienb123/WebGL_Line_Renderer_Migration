@@ -31,7 +31,7 @@ export function sampleCurveSegments(evaluateFn, opts = {}) {
   const xMax = opts.xMax ?? 1;
   const jumpThreshold = opts.jumpThreshold ?? 12;
 
-  /** @type {Float32Array[]} */
+  /** @type {Float32Array[]} **/
   const segments = [];
   /** @type {number[]} */
   let buf = [];
